@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "ishanp.pill-suite",
+  "name": "Pill Suite",
+  "version": "1.0.0",
+  "author": "ishan-parihar",
+  "description": "Segmented pill bar + static tray. Bar paints pills only behind widget clusters (no full-width strip); tray is always fully expanded with no chevron, ideal for the segmented pill layout.",
+  "kinds": ["bar", "bar-widget"],
+  "entryPoints": {
+    "bar": "Bar.qml",
+    "barWidget": "StaticTray.qml"
+  },
+  "barWidget": {
+    "displayName": "Static Tray",
+    "description": "Always-expanded system tray — no chevron, all icons visible. Designed for the segmented pill bar.",
+    "category": "Status",
+    "allowMultiple": false
+  },
+  "omarchy": {
+    "clonedFrom": "omarchy.bar+omarchy.tray"
+  }
+}
