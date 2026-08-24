@@ -7,15 +7,15 @@ Segmented pill bar — transparent window, pills only behind widget clusters. In
 ## Installation
 
 ```bash
-# Add the plugin (clones to ~/.config/omarchy/plugins/ishanp.pill-bar/)
+# Add the plugin (clones to ~/.config/omarchy/plugins/pill-bar/)
 omarchy plugin add https://github.com/ishan-parihar/pill-bar.git
 
 # Enable the bar (replaces the default omarchy bar)
-omarchy plugin enable ishanp.pill-bar
+omarchy plugin enable pill-bar
 
 # The static tray widget is part of the same plugin
 # Add it to the bar if not already present (center section):
-# omarchy bar put ishanp.pill-bar --section center
+# omarchy bar put pill-bar --section center
 ```
 
 Restart the shell if needed:
@@ -27,16 +27,16 @@ omarchy restart shell
 ### Manual install
 
 ```bash
-git clone https://github.com/ishan-parihar/pill-bar.git ~/.config/omarchy/plugins/ishanp.pill-bar
+git clone https://github.com/ishan-parihar/pill-bar.git ~/.config/omarchy/plugins/pill-bar
 omarchy-shell shell rescanPlugins
-omarchy plugin enable ishanp.pill-bar
+omarchy plugin enable pill-bar
 ```
 
 ## Removal
 
 ```bash
-omarchy plugin disable ishanp.pill-bar  # or remove
-omarchy plugin remove ishanp.pill-bar
+omarchy plugin disable pill-bar  # or remove
+omarchy plugin remove pill-bar
 # Switch back to the default bar
 omarchy bar use omarchy.bar
 omarchy restart shell
@@ -49,11 +49,11 @@ omarchy restart shell
 ```json
 {
   "bar": {
-    "id": "ishanp.pill-bar",
+    "id": "pill-bar",
     "centerAnchor": "tmn73.calendar",
     "layout": {
       "left": [{ "id": "omarchy.menu" }, { "id": "decent-workspaces" }],
-      "center": [{ "id": "tmn73.calendar" }, { "id": "omarchy.weather" }, { "id": "ishanp.pill-bar" }],
+      "center": [{ "id": "tmn73.calendar" }, { "id": "omarchy.weather" }, { "id": "pill-bar" }],
       "right": []
     }
   }
@@ -90,6 +90,6 @@ MIT — see [LICENSE](./LICENSE).
 ## Development
 
 ```bash
-omarchy plugin validate ~/.config/omarchy/plugins/ishanp.pill-bar
-omarchy plugin clone ishanp.pill-bar  # to fork locally
+omarchy plugin validate ~/.config/omarchy/plugins/pill-bar
+omarchy plugin clone pill-bar  # to fork locally
 ```

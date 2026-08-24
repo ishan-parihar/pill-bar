@@ -1,11 +1,14 @@
 {
   "schemaVersion": 1,
-  "id": "ishanp.pill-bar",
+  "id": "pill-bar",
   "name": "Pill Bar",
   "version": "1.0.0",
   "author": "ishan-parihar",
-  "description": "Segmented pill bar — transparent window, pills only behind widget clusters. Includes always-expanded static tray (no chevron) for the segmented layout. Center anchored on calendar.",
-  "kinds": ["bar", "bar-widget"],
+  "description": "Segmented pill bar \u2014 transparent window, pills only behind widget clusters. Includes always-expanded static tray (no chevron) for the segmented layout. Center anchored on calendar.",
+  "kinds": [
+    "bar",
+    "bar-widget"
+  ],
   "entryPoints": {
     "bar": "Bar.qml",
     "barWidget": "StaticTray.qml"
