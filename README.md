@@ -76,6 +76,10 @@ status-slot = 31
 
 - **Segmented pills**: `Bar.qml` window is `transparent`; pills are drawn per-cluster (left/center/right), with `beforeList`/`afterList`/`centerAnchor` handling.
 - **Static tray**: `StaticTray.qml` — always expanded, `expandIcon` hidden, `drawerBlockWidth = drawerExtent`, no chevron/mirror hack, `containmentMask` bounds to drawer only.
+- **Tray placement**: by default the tray is pinned to the section's inner edge
+  (end of center) regardless of layout order, so the drawer opens next to the
+  bar center. To render the tray exactly where placed, opt out per entry:
+  `{ "id": "pill-bar", "pinTray": false }`.
 - **Cloned from** `omarchy.bar` + `omarchy.tray` and merged into a single suite (`kinds: ["bar","bar-widget"]`) so one `plugin add` ships both.
 
 ## Requirements

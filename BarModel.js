@@ -26,12 +26,28 @@ function entryId(entry) {
   return ""
 }
 
-function pinTrayToInner(entries, section) {
-  var trayEntry = null
-  var result = []
+// Whether the tray wants edge-pinning. Opt out per layout entry:
+// { "id": "pill-bar", "pinTray": false } renders the tray exactly where
+// placed instead of forcing it to the section's inner edge.
+function trayPinned(entries) {
   var values = Array.isArray(entries) ? entries : []
   for (var i = 0; i < values.length; i++) {
-    if (entryId(values[i]) === "omarchy.tray") trayEntry = values[i]
+    var id = entryId(values[i])
+    if (id === "omarchy.tray" || id === "pill-bar") {
+      return entrySettings(values[i]).pinTray !== false
+    }
+  }
+  return true
+}
+
+function pinTrayToInner(entries, section) {
+  var values = Array.isArray(entries) ? entries : []
+  if (!trayPinned(values)) return values
+  var trayEntry = null
+  var result = []
+  for (var i = 0; i < values.length; i++) {
+    var id = entryId(values[i])
+    if (id === "omarchy.tray" || id === "pill-bar") trayEntry = values[i]
     else result.push(values[i])
   }
   if (trayEntry) {
