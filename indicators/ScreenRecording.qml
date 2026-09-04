@@ -5,6 +5,11 @@ import qs.Ui
 BarIndicator {
   id: root
 
+  // pill-bar: revealed indicators always render at full brightness
+  dimmed: false
+  concealed: false
+  function syncIndicatorOpacity() { opacity = 1 }
+
   property bool recording: false
 
   active: recording

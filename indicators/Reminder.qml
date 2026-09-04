@@ -6,6 +6,11 @@ import qs.Ui
 BarIndicator {
   id: root
 
+  // pill-bar: revealed indicators always render at full brightness
+  dimmed: false
+  concealed: false
+  function syncIndicatorOpacity() { opacity = 1 }
+
   property int reminderCount: 0
   property string tooltip: ""
 

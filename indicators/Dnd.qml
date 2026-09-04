@@ -5,6 +5,11 @@ import qs.Ui
 BarIndicator {
   id: root
 
+  // pill-bar: revealed indicators always render at full brightness
+  dimmed: false
+  concealed: false
+  function syncIndicatorOpacity() { opacity = 1 }
+
   readonly property var notificationService: bar?.shell?.firstPartyServiceFor("omarchy.notifications")
   readonly property bool dnd: notificationService ? notificationService.doNotDisturb : false
 
