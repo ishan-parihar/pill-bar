@@ -3,6 +3,7 @@ import Quickshell
 import Quickshell.Wayland
 import qs.Commons
 import qs.Ui
+import "TrayModel.js" as TrayModel
 
 BarWidget {
   id: root
@@ -11,9 +12,11 @@ BarWidget {
 
   readonly property var toplevel: ToplevelManager.activeToplevel
   readonly property string title: toplevel ? (toplevel.title || toplevel.appId || "") : ""
+  // Untrusted Wayland string: sanitize + cap before render/tooltip (#2066).
+  readonly property string safeTitle: TrayModel.sanitizeSniText(root.title, 120)
   readonly property int maxLabelWidth: Number(setting("maxWidth", 280))
 
-  visible: title !== "" && !vertical
+  visible: safeTitle !== "" && !vertical
   implicitWidth: visible ? Math.min(maxLabelWidth, labelText.implicitWidth) + Style.spacing.controlPaddingX * 2 : 0
   implicitHeight: barSize
 
@@ -32,7 +35,8 @@ BarWidget {
       anchors.verticalCenter: parent.verticalCenter
       anchors.left: parent.left
       width: parent.width
-      text: root.title
+      text: root.safeTitle
+      textFormat: Text.PlainText
       color: root.bar ? root.bar.barForeground : Color.foreground
       font.family: root.bar ? root.bar.fontFamily : Style.font.family
       font.pixelSize: Style.font.body
@@ -57,7 +61,7 @@ BarWidget {
         root.toplevel.activate()
       }
     }
-    onEntered: if (root.bar) root.bar.showTooltip(root, root.title)
+    onEntered: if (root.bar) root.bar.showTooltip(root, root.safeTitle)
     onExited: if (root.bar) root.bar.hideTooltip(root)
   }
 }

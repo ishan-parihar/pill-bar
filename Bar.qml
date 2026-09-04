@@ -884,10 +884,13 @@ Item {
       process.running = true
   }
 
+  // Receiving boundary for ALL bar tooltips (window titles, SNI strings):
+  // sanitize + cap at 200 chars before anything reaches the bubble.
   function showTooltip(target, text) {
     clearTooltip()
 
-    if (!targetTooltipHovered(target) || !text) {
+    var safe = BarModel.sanitizeSniText(text, 200)
+    if (!targetTooltipHovered(target) || !safe) {
       tooltipRequest += 1
       return
     }
@@ -895,7 +898,7 @@ Item {
     var request = tooltipRequest + 1
     tooltipRequest = request
     pendingTooltipTarget = target
-    pendingTooltipText = text
+    pendingTooltipText = safe
 
     Qt.callLater(function() {
       if (request !== tooltipRequest) return
@@ -1095,6 +1098,7 @@ Item {
           id: tooltipLabel
           anchors.centerIn: parent
           text: root.tooltipText
+          textFormat: Text.PlainText
           color: Color.tooltip.text
           font.family: root.fontFamily
           font.pixelSize: Style.font.body
@@ -1832,8 +1836,8 @@ Item {
       var data = Util.parseModuleJson(raw)
       var klass = data.class || data.alt || ""
 
-      outputText = data.text || String(raw || "").trim()
-      outputTooltip = data.tooltip || String(setting("tooltip", ""))
+      outputText = BarModel.sanitizeSniText(data.text || String(raw || "").trim(), 120)
+      outputTooltip = BarModel.sanitizeSniText(data.tooltip || String(setting("tooltip", "")), 200)
       outputActive = klass === "active" || (Array.isArray(klass) && klass.indexOf("active") !== -1)
     }
 

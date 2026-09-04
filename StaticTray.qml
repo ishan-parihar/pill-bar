@@ -33,6 +33,17 @@ BarWidget {
   property real revealProgress: expanded ? 1 : 0
   readonly property real revealExtent: drawerExtent * revealProgress
 
+  // Strict bounds for untrusted StatusNotifier data (marketplace review #2066):
+  // a hostile local tray client must not grow the bar's object graph or blow
+  // up layout with unbounded menus/strings/icons.
+  readonly property int maxMenuDepth: 6
+  readonly property int maxEntriesPerLevel: 100
+  readonly property int maxTrayItems: 64
+  readonly property int maxRowTextLen: 80
+  readonly property int maxTitleLen: 120
+  readonly property int maxTooltipLen: 200
+  readonly property int maxIconUrlLen: 256
+
   // Submenu drill-down state. QsMenuEntry.display() renders a *platform* menu,
   // which Quickshell refuses unless the shell root sets `//@ pragma
   // UseQApplication` - omarchy's shell.qml does not, so every submenu click was
@@ -50,6 +61,16 @@ BarWidget {
   readonly property var currentChildren: submenuDepth > 0
     ? submenuStack[submenuDepth - 1].opener.children
     : trayMenuOpener.children
+  // Cap delegates per level: children is unbounded SNI data, so the Repeater
+  // below uses this plain capped array instead of the raw model.
+  readonly property var visibleChildren: {
+    var kids = root.currentChildren
+    if (!kids || typeof kids.length !== "number") return []
+    var out = []
+    var n = Math.min(kids.length, root.maxEntriesPerLevel)
+    for (var i = 0; i < n; i++) out.push(kids[i])
+    return out
+  }
 
   // Changing level rebuilds the row delegates synchronously, so the next
   // row lands under a cursor that hasn't moved. Submenu clicks used to be
@@ -92,10 +113,11 @@ BarWidget {
   }
 
   function enterSubmenu(entry, title) {
+    if (!entry || submenuStack.length >= root.maxMenuDepth) return
     var opener = submenuOpenerComponent.createObject(root, { menu: entry })
     if (!opener) return
     var stack = submenuStack.slice()
-    stack.push({ opener: opener, title: title })
+    stack.push({ opener: opener, title: TrayModel.sanitizeSniText(title, root.maxRowTextLen) })
     submenuStack = stack
     settleMenuLevel()
   }
@@ -137,19 +159,38 @@ BarWidget {
     // tray icon outside a standard theme (e.g. Steam's flat public/ dir). Hand
     // it straight to IconImage; guessing a theme sub-directory here only broke
     // apps whose layout didn't match the guess.
-    return String(icon || "")
+    // Length-capped; display size is fixed at 12px with a capped sourceSize.
+    return TrayModel.sanitizeIconUrl(icon, root.maxIconUrlLen)
   }
 
   // Symbolic icons ship a fixed fill (often near-white) that the host is meant
   // to recolor to its foreground; detect them by the freedesktop "-symbolic"
   // name suffix so they can be tinted instead of rendered as-is.
   function iconIsSymbolic(icon) {
-    var name = String(icon || "").split("?")[0]
+    var name = TrayModel.sanitizeIconUrl(icon, root.maxIconUrlLen).split("?")[0]
     return name.slice(-9) === "-symbolic"
   }
 
+  // Receiving boundary for SNI tooltip strings: sanitize + cap 200 chars.
   function trayTooltip(item) {
-    return item.tooltipTitle || item.title || item.id || ""
+    if (!item) return ""
+    var tip = TrayModel.sanitizeSniText(item.tooltipTitle, root.maxTooltipLen)
+    if (tip) return tip
+    var label = TrayModel.sanitizeSniText(item.title, root.maxTooltipLen)
+    if (label) return label
+    return TrayModel.sanitizeSniText(item.id, root.maxTooltipLen)
+  }
+
+  function sanitizeItemLabel(item) {
+    if (!item) return "Unknown"
+    var label = TrayModel.sanitizeSniText(item.title, root.maxTitleLen)
+    if (label) return label
+    var tip = TrayModel.sanitizeSniText(item.tooltipTitle, root.maxTitleLen)
+    if (tip) return tip
+    var id = TrayModel.sanitizeSniText(item.id, root.maxTitleLen)
+    if (!id) return "Unknown"
+    var slash = id.lastIndexOf("/")
+    return slash !== -1 ? id.substring(slash + 1) : id
   }
 
   function classifyItem(item) {
@@ -177,7 +218,8 @@ BarWidget {
       }
       if (classifyItem(item) === category) result.push(item)
     }
-    return result
+    // Cap delegates: one TrayItem per entry, so bound the model.
+    return result.length > root.maxTrayItems ? result.slice(0, root.maxTrayItems) : result
   }
 
   function persistTrayState(pinned, hidden) {
@@ -431,15 +473,7 @@ BarWidget {
           implicitHeight: 28
 
           readonly property string itemId: String(modelData.id || "")
-          readonly property string displayName: {
-            var t = String(modelData.title || "").trim()
-            if (t) return t
-            var tt = String(modelData.tooltipTitle || "").trim()
-            if (tt) return tt
-            var id = String(modelData.id || "")
-            var slash = id.lastIndexOf("/")
-            return slash !== -1 ? id.substring(slash + 1) : (id || "Unknown")
-          }
+          readonly property string displayName: root.sanitizeItemLabel(rowRoot.modelData)
           readonly property bool isPinned: root.pinnedIds.indexOf(itemId) !== -1
           readonly property bool isHidden: root.hiddenIds.indexOf(itemId) !== -1
 
@@ -459,6 +493,7 @@ BarWidget {
             anchors.right: rowHideBtn.left
             anchors.rightMargin: Style.space(8)
             text: rowRoot.displayName
+            textFormat: Text.PlainText
             color: root.foreground
             font.family: root.fontFamily
             font.pixelSize: Style.font.bodySmall
@@ -569,6 +604,7 @@ BarWidget {
             anchors.right: parent.right
             anchors.rightMargin: Style.space(10)
             text: root.currentTitle
+            textFormat: Text.PlainText
             color: root.foreground
             font.family: root.fontFamily
             font.pixelSize: Style.font.bodySmall
@@ -626,15 +662,15 @@ BarWidget {
           spacing: 0
 
           Repeater {
-            model: root.currentChildren
+            model: root.visibleChildren
 
             delegate: Item {
               id: menuRow
               required property var modelData
               required property int index
 
-              readonly property string rowText: String(modelData.text || "")
-              readonly property string activeTitle: root.activeTrayItem ? String(root.activeTrayItem.title || root.activeTrayItem.id || "") : ""
+              readonly property string rowText: TrayModel.sanitizeSniText(modelData.text, root.maxRowTextLen)
+              readonly property string activeTitle: root.activeTrayItem ? TrayModel.sanitizeSniText(root.activeTrayItem.title || root.activeTrayItem.id, root.maxRowTextLen) : ""
               // Both only ever describe the root menu; inside a submenu the first
               // rows are real entries and must not be swallowed.
               readonly property bool atRoot: root.submenuDepth === 0
@@ -680,7 +716,8 @@ BarWidget {
 
               Image {
                 id: menuIcon
-                visible: !menuRow.modelData.isSeparator && String(menuRow.modelData.icon || "") !== ""
+                readonly property string safeIcon: TrayModel.sanitizeIconUrl(menuRow.modelData.icon, root.maxIconUrlLen)
+                visible: !menuRow.modelData.isSeparator && menuIcon.safeIcon !== ""
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.left: parent.left
                 anchors.leftMargin: Style.space(24)
@@ -691,7 +728,7 @@ BarWidget {
                 // which leaves PNG icons upscaled and blurry on HiDPI displays.
                 sourceSize.width: width * Screen.devicePixelRatio
                 sourceSize.height: height * Screen.devicePixelRatio
-                source: menuRow.modelData.icon
+                source: menuIcon.safeIcon
               }
 
               Text {
@@ -702,6 +739,7 @@ BarWidget {
                 anchors.right: submenuGlyph.left
                 anchors.rightMargin: Style.space(8)
                 text: menuRow.rowText
+                textFormat: Text.PlainText
                 color: root.foreground
                 font.family: root.fontFamily
                 font.pixelSize: Style.font.bodySmall

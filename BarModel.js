@@ -224,6 +224,27 @@ function nearestDropTarget(candidates, point, vertical) {
   return best
 }
 
+// Bounds for untrusted strings reaching the bar (marketplace review #2066):
+// window titles, tray tooltips, custom-module output. Strip control chars and
+// truncate at the receiving boundary; renderers use Text.PlainText so markup
+// in the value can never be interpreted.
+function sanitizeSniText(value, maxLen) {
+  var s = String(value === undefined || value === null ? "" : value)
+  s = s.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "")
+  s = s.trim()
+  var max = typeof maxLen === "number" && maxLen > 0 ? maxLen : 120
+  if (s.length > max) s = s.slice(0, max) + "\u2026"
+  return s
+}
+
+function sanitizeIconUrl(value, maxLen) {
+  var s = String(value === undefined || value === null ? "" : value)
+  s = s.replace(/[\x00-\x20\x7F]/g, "")
+  var max = typeof maxLen === "number" && maxLen > 0 ? maxLen : 256
+  if (s.length > max) return ""
+  return s
+}
+
 if (typeof module !== "undefined") {
   module.exports = {
     isDrawnSlot: isDrawnSlot,
@@ -242,6 +263,8 @@ if (typeof module !== "undefined") {
     expandPath: expandPath,
     customModuleSafeName: customModuleSafeName,
     customModuleType: customModuleType,
-    customModulePath: customModulePath
+    customModulePath: customModulePath,
+    sanitizeSniText: sanitizeSniText,
+    sanitizeIconUrl: sanitizeIconUrl
   }
 }
