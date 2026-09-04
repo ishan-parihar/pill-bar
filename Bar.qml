@@ -581,7 +581,24 @@ Item {
     return source ? Util.fileUrl(source) : ""
   }
 
-  Component.onCompleted: applyBarConfig()
+  Component.onCompleted: { applyBarConfig(); shadowStockIndicators() }
+  // barWidgetRegistry is injected async after load — retry when it arrives.
+  onBarWidgetRegistryChanged: shadowStockIndicators()
+
+  // The host registry lets stock widgets win over this plugin's copies by
+  // scan order, so the stock Indicators (dim inactive icons, no overrides)
+  // renders instead of widgets/Indicators.qml. Re-register ours last so the
+  // pill-bar copy — full-brightness revealed indicators — is the live one.
+  function shadowStockIndicators() {
+    if (!barWidgetRegistry || typeof barWidgetRegistry.register !== "function") return
+    var comp = Qt.createComponent("widgets/Indicators.qml")
+    if (comp.status === Component.Ready) {
+      barWidgetRegistry.register("omarchy.indicators", comp, { shadowedBy: "pill-bar" })
+      console.log("PILLBAR-INDICATORS-LIVE")
+    } else {
+      console.warn("pill-bar indicator shadow failed", comp.errorString())
+    }
+  }
 
   // Revealing the indicators widens their section, which can slide a neighbour
   // under a stationary pointer. Collapsing on that un-hover would move it back
